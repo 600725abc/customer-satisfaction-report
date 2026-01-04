@@ -2,8 +2,11 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { AnalysisResult } from "../types";
 
-// Try multiple environment variable names for compatibility
-const API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY || '';
+// Use import.meta.env for Vite, with fallback to process.env for compatibility
+const API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+  (typeof process !== 'undefined' && process.env?.VITE_GEMINI_API_KEY) ||
+  (typeof process !== 'undefined' && process.env?.API_KEY) ||
+  '';
 
 const MODEL_NAME = 'gemini-2.0-flash';
 
