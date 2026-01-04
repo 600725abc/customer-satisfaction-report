@@ -1,0 +1,7 @@
+{
+  "name": "Sentilyser Pro",
+  "description": "An advanced customer sentiment dashboard that transforms raw text reviews into visual insights and actionable executive summaries using Gemini 3 Pro reasoning.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
