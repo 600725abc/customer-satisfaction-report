@@ -8,7 +8,7 @@ const API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY ||
   (typeof process !== 'undefined' && process.env?.API_KEY) ||
   '';
 
-const MODEL_NAME = 'gemini-2.0-flash';
+const MODEL_NAME = 'gemini-1.5-flash';
 
 export const analyzeReviews = async (text: string): Promise<AnalysisResult> => {
   if (!API_KEY) {
