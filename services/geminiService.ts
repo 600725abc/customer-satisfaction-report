@@ -2,13 +2,19 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { AnalysisResult } from "../types";
 
-const API_KEY = process.env.API_KEY || '';
+// Try multiple environment variable names for compatibility
+const API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY || '';
+
+const MODEL_NAME = 'gemini-2.0-flash';
 
 export const analyzeReviews = async (text: string): Promise<AnalysisResult> => {
+  if (!API_KEY) {
+    throw new Error('API Key is not configured. Please set VITE_GEMINI_API_KEY environment variable.');
+  }
   const ai = new GoogleGenAI({ apiKey: API_KEY });
-  
+
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
+    model: MODEL_NAME,
     contents: `Analyze the following customer reviews and provide a detailed sentiment report in JSON format.
     The reviews may or may not have dates. If they don't have dates, use a logical sequence of dates starting from today backwards.
     
@@ -82,17 +88,19 @@ export const analyzeReviews = async (text: string): Promise<AnalysisResult> => {
 };
 
 export const chatWithAI = async function* (history: { role: 'user' | 'model', parts: { text: string }[] }[], message: string) {
+  if (!API_KEY) {
+    throw new Error('API Key is not configured.');
+  }
   const ai = new GoogleGenAI({ apiKey: API_KEY });
-  
+
   const responseStream = await ai.models.generateContentStream({
-    model: 'gemini-3-pro-preview',
+    model: MODEL_NAME,
     contents: [
       ...history,
       { role: 'user', parts: [{ text: message }] }
     ],
     config: {
-      thinkingConfig: { thinkingBudget: 32768 },
-      systemInstruction: "You are a Customer Sentiment Analyst expert. Use your thinking capabilities to deeply analyze trends, suggest complex business strategies, and answer questions based on customer feedback data. Be professional, data-driven, and insightful."
+      systemInstruction: "You are a Customer Sentiment Analyst expert. Analyze trends, suggest complex business strategies, and answer questions based on customer feedback data. Be professional, data-driven, and insightful."
     }
   });
 
