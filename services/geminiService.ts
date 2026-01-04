@@ -12,8 +12,10 @@ const MODEL_NAME = 'gemini-2.0-flash';
 
 export const analyzeReviews = async (text: string): Promise<AnalysisResult> => {
   if (!API_KEY) {
+    console.error("Gemini Service: API Key is missing!");
     throw new Error('API Key is not configured. Please set VITE_GEMINI_API_KEY environment variable.');
   }
+  console.log("Gemini Service: API Key is present.");
   const ai = new GoogleGenAI({ apiKey: API_KEY });
 
   const response = await ai.models.generateContent({

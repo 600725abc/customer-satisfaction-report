@@ -52,8 +52,9 @@ const App: React.FC = () => {
     try {
       const data = await analyzeReviews(rawText);
       setReport(data);
-    } catch (err) {
-      setError("Failed to analyze data. Please check your API key and try again.");
+    } catch (err: any) {
+      const errorMessage = err?.message || "Failed to analyze data. Please check your API key and try again.";
+      setError(errorMessage);
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -69,7 +70,7 @@ const App: React.FC = () => {
 
     const headers = ["Date", "Score (0-100)", "Label", "Summary", "Actionable Items"];
     const actionableStr = normalizedReport.actionableItems.map(item => `${item.title}: ${item.description} (${item.impact} impact)`).join('; ');
-    
+
     const rows = normalizedReport.sentimentTrend.map(point => [
       point.date,
       point.score.toFixed(1),
@@ -96,7 +97,7 @@ const App: React.FC = () => {
 
   const handleExportPDF = async () => {
     if (!reportRef.current) return;
-    
+
     setIsLoading(true);
     try {
       const element = reportRef.current;
@@ -106,16 +107,16 @@ const App: React.FC = () => {
         logging: false,
         backgroundColor: '#f8fafc'
       });
-      
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const margin = 10;
-      
+
       const contentWidth = pdfWidth - (2 * margin);
       const contentHeight = (canvas.height * contentWidth) / canvas.width;
-      
+
       let heightLeft = contentHeight;
       let position = margin;
 
@@ -162,17 +163,17 @@ const App: React.FC = () => {
           <div className="max-w-3xl mx-auto text-center py-12">
             <h2 className="text-4xl font-extrabold text-slate-900 mb-4">Turn Feedback into Intelligence</h2>
             <p className="text-slate-600 mb-8 text-lg">Paste your customer reviews below to generate a deep-dive sentiment report powered by Gemini 3 Pro Reasoning.</p>
-            
+
             <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-200 text-left">
               <label className="block text-sm font-semibold text-slate-700 mb-2">Customer Reviews (Text Batch)</label>
-              <textarea 
+              <textarea
                 value={rawText}
                 onChange={(e) => setRawText(e.target.value)}
                 placeholder="E.g. 2024-11-01: Great product!..."
                 className="w-full h-64 p-4 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none mb-4"
               />
               <div className="flex gap-4">
-                <button 
+                <button
                   onClick={handleAnalyze}
                   disabled={isLoading || !rawText.trim()}
                   className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
@@ -183,7 +184,7 @@ const App: React.FC = () => {
                     <><i className="fas fa-wand-magic-sparkles"></i> Generate Report</>
                   )}
                 </button>
-                <button 
+                <button
                   onClick={useSampleData}
                   className="bg-slate-100 text-slate-600 font-semibold py-3 px-6 rounded-xl hover:bg-slate-200 transition-all"
                 >
@@ -201,21 +202,21 @@ const App: React.FC = () => {
                 <p className="text-slate-500 text-sm">Generated on {new Date().toLocaleDateString()}</p>
               </div>
               <div className="flex flex-wrap gap-3 w-full sm:w-auto">
-                <button 
+                <button
                   onClick={handleExportPDF}
                   className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700 transition-all shadow-lg font-bold text-sm"
                 >
                   <i className="fas fa-file-pdf"></i>
                   Download PDF
                 </button>
-                <button 
+                <button
                   onClick={handleExportCSV}
                   className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all shadow-sm font-semibold text-sm"
                 >
                   <i className="fas fa-file-csv"></i>
                   CSV
                 </button>
-                <button 
+                <button
                   onClick={() => setReport(null)}
                   className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-400 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all shadow-sm font-semibold text-sm"
                 >
@@ -239,16 +240,16 @@ const App: React.FC = () => {
                       </div>
                       <p className="text-2xl font-bold text-slate-900">{normalizedReport.overallStats.averageScore.toFixed(1)}%</p>
                     </div>
-                    
+
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-72 p-4 bg-slate-900 text-white text-[12px] rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none shadow-2xl">
                       <p className="font-bold mb-1 text-indigo-400">What is Satisfaction Index?</p>
                       <p className="leading-relaxed text-slate-300">
                         This index scales overall sentiment from 0 to 100.
-                        <br/><br/>
+                        <br /><br />
                         • <span className="text-emerald-400">100%</span>: Perfect customer delight.
-                        <br/>
+                        <br />
                         • <span className="text-amber-400">50%</span>: Balanced/Neutral feedback.
-                        <br/>
+                        <br />
                         • <span className="text-rose-400">0%</span>: Critical dissatisfaction.
                       </p>
                       <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900"></div>
@@ -337,9 +338,8 @@ const App: React.FC = () => {
                           <div key={idx} className="bg-white/10 p-4 rounded-xl border border-white/5">
                             <div className="flex justify-between items-center mb-1">
                               <span className="font-bold text-sm">{item.title}</span>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                                item.impact === 'High' ? 'bg-rose-500' : item.impact === 'Medium' ? 'bg-amber-500' : 'bg-emerald-500'
-                              }`}>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${item.impact === 'High' ? 'bg-rose-500' : item.impact === 'Medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                                }`}>
                                 {item.impact}
                               </span>
                             </div>
