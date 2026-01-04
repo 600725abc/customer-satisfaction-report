@@ -48,6 +48,13 @@ npm run build
 
 部署腳本位於 [deploy.yml](.github/workflows/deploy.yml)。
 
+> [!IMPORTANT]
+> **首次部署必看**：
+> 如果部署失敗並出現 `Get Pages site failed` 錯誤，請至 GitHub 專案設定：
+> 1. 進入 `Settings` -> `Pages`
+> 2. 在 `Build and deployment` -> `Source` 選擇 **GitHub Actions**
+> 3. 重新執行 GitHub Action 即可成功。
+
 ### 檔案忽略規範 (.gitignore)
 
 我們已建立完整的 `.gitignore` 檔案，確保以下內容不會被上傳至 GitHub：
