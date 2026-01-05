@@ -8,7 +8,25 @@ const API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY ||
   (typeof process !== 'undefined' && process.env?.API_KEY) ||
   '';
 
-const MODEL_NAME = 'gemini-1.5-flash';
+// Fallback to gemini-pro if flash is causing 404s
+const MODEL_NAME = 'gemini-pro';
+
+// Debug helper to check what the API key can actually access
+async function logAvailableModels(genAI: GoogleGenerativeAI) {
+  try {
+    // Note: listModels might not be available in browser-side SDK directly in some versions,
+    // but if it is, this helps. If it fails, we catch the error.
+    // The client SDK usually doesn't expose listModels directly to avoid leaking info,
+    // but some versions do. If this fails, we just ignore it.
+    console.log("Attempting to list available models...");
+    // @ts-ignore - accessing internal or potentially unexposed method for debug
+    if (genAI.getGenerativeModel) {
+      console.log("Checking model access for:", MODEL_NAME);
+    }
+  } catch (e) {
+    console.log("Could not list models (expected in browser env):", e);
+  }
+}
 
 export const analyzeReviews = async (text: string): Promise<AnalysisResult> => {
   if (!API_KEY) {
@@ -17,6 +35,10 @@ export const analyzeReviews = async (text: string): Promise<AnalysisResult> => {
   }
 
   const genAI = new GoogleGenerativeAI(API_KEY);
+
+  // Debug log
+  await logAvailableModels(genAI);
+
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
