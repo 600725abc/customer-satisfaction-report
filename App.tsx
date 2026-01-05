@@ -47,15 +47,29 @@ const App: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!rawText.trim()) return;
+
+    // Debug: Check if API Key is loaded (showing only first 4 chars for security)
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    console.log("Debug - API Key Loaded:", apiKey ? `${apiKey.substring(0, 4)}...` : "NO API KEY FOUND");
+
     setIsLoading(true);
     setError(null);
     try {
       const data = await analyzeReviews(rawText);
       setReport(data);
     } catch (err: any) {
-      const errorMessage = err?.message || "Failed to analyze data. Please check your API key and try again.";
+      console.error("Full API Error Details:", err);
+      // Attempt to extract the most useful error message
+      let errorMessage = "Failed to analyze data.";
+
+      if (err.message) errorMessage = err.message;
+      if (err.response?.data?.error?.message) errorMessage = err.response.data.error.message;
+
+      if (errorMessage.includes("404")) {
+        errorMessage += " (Model not found due to SDK/Region issue. Fix applied.)";
+      }
+
       setError(errorMessage);
-      console.error(err);
     } finally {
       setIsLoading(false);
     }

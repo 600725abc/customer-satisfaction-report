@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { AnalysisResult } from "../types";
 
 // Use import.meta.env for Vite, with fallback to process.env for compatibility
@@ -15,71 +15,59 @@ export const analyzeReviews = async (text: string): Promise<AnalysisResult> => {
     console.error("Gemini Service: API Key is missing!");
     throw new Error('API Key is not configured. Please set VITE_GEMINI_API_KEY environment variable.');
   }
-  console.log("Gemini Service: API Key is present.");
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-  const response = await ai.models.generateContent({
+  const genAI = new GoogleGenerativeAI(API_KEY);
+  const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
-    contents: `Analyze the following customer reviews and provide a detailed sentiment report in JSON format.
-    The reviews may or may not have dates. If they don't have dates, use a logical sequence of dates starting from today backwards.
-    
-    CRITICAL RULES:
-    1. Overall stats (positive, neutral, negative) MUST sum exactly to 100.
-    2. Score for trend points should be between -1.0 and 1.0.
-    3. Average score should be the mean of all sentiment scores (-1.0 to 1.0).
-
-    Reviews:
-    ${text}
-    `,
-    config: {
+    generationConfig: {
       responseMimeType: "application/json",
       responseSchema: {
-        type: Type.OBJECT,
+        type: SchemaType.OBJECT,
         properties: {
-          summary: { type: Type.STRING },
+          summary: { type: SchemaType.STRING },
           sentimentTrend: {
-            type: Type.ARRAY,
+            type: SchemaType.ARRAY,
             items: {
-              type: Type.OBJECT,
+              type: SchemaType.OBJECT,
               properties: {
-                date: { type: Type.STRING },
-                score: { type: Type.NUMBER },
-                label: { type: Type.STRING }
+                date: { type: SchemaType.STRING },
+                score: { type: SchemaType.NUMBER },
+                label: { type: SchemaType.STRING }
               },
               required: ['date', 'score', 'label']
             }
           },
           keywords: {
-            type: Type.ARRAY,
+            type: SchemaType.ARRAY,
             items: {
-              type: Type.OBJECT,
+              type: SchemaType.OBJECT,
               properties: {
-                text: { type: Type.STRING },
-                value: { type: Type.NUMBER },
-                sentiment: { type: Type.STRING }
+                text: { type: SchemaType.STRING },
+                value: { type: SchemaType.NUMBER },
+                sentiment: { type: SchemaType.STRING }
               },
               required: ['text', 'value', 'sentiment']
             }
           },
           actionableItems: {
-            type: Type.ARRAY,
+            type: SchemaType.ARRAY,
             items: {
-              type: Type.OBJECT,
+              type: SchemaType.OBJECT,
               properties: {
-                title: { type: Type.STRING },
-                description: { type: Type.STRING },
-                impact: { type: Type.STRING }
+                title: { type: SchemaType.STRING },
+                description: { type: SchemaType.STRING },
+                impact: { type: SchemaType.STRING }
               },
               required: ['title', 'description', 'impact']
             }
           },
           overallStats: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-              positive: { type: Type.NUMBER },
-              neutral: { type: Type.NUMBER },
-              negative: { type: Type.NUMBER },
-              averageScore: { type: Type.NUMBER }
+              positive: { type: SchemaType.NUMBER },
+              neutral: { type: SchemaType.NUMBER },
+              negative: { type: SchemaType.NUMBER },
+              averageScore: { type: SchemaType.NUMBER }
             },
             required: ['positive', 'neutral', 'negative', 'averageScore']
           }
@@ -89,28 +77,40 @@ export const analyzeReviews = async (text: string): Promise<AnalysisResult> => {
     }
   });
 
-  return JSON.parse(response.text || '{}') as AnalysisResult;
+  const prompt = `Analyze the following customer reviews and provide a detailed sentiment report in JSON format.
+    The reviews may or may not have dates. If they don't have dates, use a logical sequence of dates starting from today backwards.
+    
+    CRITICAL RULES:
+    1. Overall stats (positive, neutral, negative) MUST sum exactly to 100.
+    2. Score for trend points should be between -1.0 and 1.0.
+    3. Average score should be the mean of all sentiment scores (-1.0 to 1.0).
+
+    Reviews:
+    ${text}`;
+
+  const result = await model.generateContent(prompt);
+  const response = result.response;
+  return JSON.parse(response.text()) as AnalysisResult;
 };
 
 export const chatWithAI = async function* (history: { role: 'user' | 'model', parts: { text: string }[] }[], message: string) {
   if (!API_KEY) {
     throw new Error('API Key is not configured.');
   }
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
-
-  const responseStream = await ai.models.generateContentStream({
+  const genAI = new GoogleGenerativeAI(API_KEY);
+  const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
-    contents: [
-      ...history,
-      { role: 'user', parts: [{ text: message }] }
-    ],
-    config: {
-      systemInstruction: "You are a Customer Sentiment Analyst expert. Analyze trends, suggest complex business strategies, and answer questions based on customer feedback data. Be professional, data-driven, and insightful."
-    }
+    systemInstruction: "You are a Customer Sentiment Analyst expert. Analyze trends, suggest complex business strategies, and answer questions based on customer feedback data. Be professional, data-driven, and insightful."
   });
 
-  for await (const chunk of responseStream) {
-    const c = chunk as GenerateContentResponse;
-    yield c.text;
+  const chat = model.startChat({
+    history: history
+  });
+
+  const result = await chat.sendMessageStream(message);
+
+  for await (const chunk of result.stream) {
+    const chunkText = chunk.text();
+    yield chunkText;
   }
 };
