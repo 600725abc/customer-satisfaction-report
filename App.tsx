@@ -115,35 +115,70 @@ const App: React.FC = () => {
     setIsLoading(true);
     try {
       const element = reportRef.current;
+
+      // Temporarily expand the report container for better PDF layout
+      const mainContainer = element.closest('main');
+      const originalMaxWidth = mainContainer?.style.maxWidth || '';
+      const originalPadding = mainContainer?.style.padding || '';
+      if (mainContainer) {
+        mainContainer.style.maxWidth = 'none';
+        mainContainer.style.padding = '20px';
+      }
+
+      // Also expand the report element itself
+      const originalElementStyle = element.style.cssText;
+      element.style.width = '1400px'; // Wider capture for better text size
+      element.style.maxWidth = 'none';
+
+      // Wait for layout to settle
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const canvas = await html2canvas(element, {
-        scale: 3, // Higher scale for clearer text
+        scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: '#f8fafc'
+        backgroundColor: '#f8fafc',
+        width: 1400
       });
 
+      // Restore original styles
+      if (mainContainer) {
+        mainContainer.style.maxWidth = originalMaxWidth;
+        mainContainer.style.padding = originalPadding;
+      }
+      element.style.cssText = originalElementStyle;
+
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'mm', 'a4'); // 'l' = landscape for larger content
+      const pdf = new jsPDF('l', 'mm', 'a4'); // 'l' = landscape
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const margin = 10;
 
-      const contentWidth = pdfWidth - (2 * margin);
-      const contentHeight = (canvas.height * contentWidth) / canvas.width;
+      const maxWidth = pdfWidth - (2 * margin);
+      const maxHeight = pdfHeight - (2 * margin);
 
-      let heightLeft = contentHeight;
-      let position = margin;
+      // Calculate aspect ratios to fit content on one page
+      const imgAspectRatio = canvas.width / canvas.height;
+      const pageAspectRatio = maxWidth / maxHeight;
 
-      pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
-      heightLeft -= pdfHeight;
+      let finalWidth: number;
+      let finalHeight: number;
 
-      while (heightLeft >= 0) {
-        position = heightLeft - contentHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
-        heightLeft -= pdfHeight;
+      if (imgAspectRatio > pageAspectRatio) {
+        // Image is wider than page - fit by width
+        finalWidth = maxWidth;
+        finalHeight = maxWidth / imgAspectRatio;
+      } else {
+        // Image is taller than page - fit by height
+        finalHeight = maxHeight;
+        finalWidth = maxHeight * imgAspectRatio;
       }
 
+      // Center the image on the page
+      const xOffset = margin + (maxWidth - finalWidth) / 2;
+      const yOffset = margin + (maxHeight - finalHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
       pdf.save(`sentiment-report-${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (err) {
       console.error("PDF export failed:", err);

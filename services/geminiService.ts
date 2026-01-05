@@ -85,6 +85,9 @@ export const analyzeReviews = async (text: string): Promise<AnalysisResult> => {
     1. Overall stats (positive, neutral, negative) MUST sum exactly to 100.
     2. Score for trend points should be between -1.0 and 1.0.
     3. Average score should be the mean of all sentiment scores (-1.0 to 1.0).
+    4. actionableItems MUST contain EXACTLY 3 items, no more, no less.
+    5. actionableItems MUST be sorted by urgency - the most critical issue that needs immediate attention should be FIRST.
+    6. Each actionableItem's "impact" field MUST be one of: "High", "Medium", or "Low" - representing urgency level.
 
     Reviews:
     ${text}`;
