@@ -116,14 +116,14 @@ const App: React.FC = () => {
     try {
       const element = reportRef.current;
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 3, // Higher scale for clearer text
         useCORS: true,
         logging: false,
         backgroundColor: '#f8fafc'
       });
 
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF('l', 'mm', 'a4'); // 'l' = landscape for larger content
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const margin = 10;

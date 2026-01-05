@@ -100,12 +100,20 @@ export const chatWithAI = async function* (history: { role: 'user' | 'model', pa
   }
   const genAI = new GoogleGenerativeAI(API_KEY);
   const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
-    systemInstruction: "You are a Customer Sentiment Analyst expert. Analyze trends, suggest complex business strategies, and answer questions based on customer feedback data. Be professional, data-driven, and insightful."
+    model: MODEL_NAME
   });
 
+  // Prepend system instruction as first exchange in history for better model compatibility
+  const systemPrompt = "You are a Customer Sentiment Analyst expert. Analyze trends, suggest complex business strategies, and answer questions based on customer feedback data. Be professional, data-driven, and insightful.";
+
+  const fullHistory = [
+    { role: 'user' as const, parts: [{ text: `System: ${systemPrompt}` }] },
+    { role: 'model' as const, parts: [{ text: 'Understood. I am ready to help you analyze customer sentiment data and provide strategic insights.' }] },
+    ...history
+  ];
+
   const chat = model.startChat({
-    history: history
+    history: fullHistory
   });
 
   const result = await chat.sendMessageStream(message);
