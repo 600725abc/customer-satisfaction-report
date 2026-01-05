@@ -8,8 +8,8 @@ const API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY ||
   (typeof process !== 'undefined' && process.env?.API_KEY) ||
   '';
 
-// Using gemini-1.5-flash-latest to bypass potential routing cache issues
-const MODEL_NAME = 'gemini-1.5-flash-latest';
+// Trying gemini-2.0-flash-exp as alternative
+const MODEL_NAME = 'gemini-2.0-flash-exp';
 
 export const analyzeReviews = async (text: string): Promise<AnalysisResult> => {
   if (!API_KEY) {
